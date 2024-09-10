@@ -7,6 +7,12 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 import streamlit as st
 
+# Set up the Streamlit page config
+st.set_page_config(
+    page_title="Cloudflare Documentation GPT",
+    page_icon="🖥️",
+)
+
 # Sidebar input for OpenAI API key
 with st.sidebar:
     openai_api_key = st.text_input("Enter your OpenAI API Key", type="password")
@@ -90,11 +96,7 @@ def process_content_into_retriever(pages_content):
     vector_store = FAISS.from_documents(docs, OpenAIEmbeddings(openai_api_key=openai_api_key))
     return vector_store.as_retriever()
 
-# Set up the Streamlit page config
-st.set_page_config(
-    page_title="Cloudflare Documentation GPT",
-    page_icon="🖥️",
-)
+
 
 # Display the page title and description
 st.markdown(
