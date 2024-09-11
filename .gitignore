@@ -2,4 +2,7 @@ env/
 .env
 files/
 .cache/
+venv/
+.venv/
 .streamlit
+Assignment_Day18_new/
