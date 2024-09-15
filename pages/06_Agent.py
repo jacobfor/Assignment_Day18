@@ -1,89 +1,65 @@
+import streamlit as st
 import openai
-import os
+from openai import OpenAI
 
-# Set your OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Function to create the assistant
+def create_assistant():
+    assistant = client.beta.assistants.create(
+        name="Wikipedia Search Assistant",
+        description="You are an assistant that searches Wikipedia and provides relevant information.",
+        model="gpt-4-1106-preview",
+        tools=[{"type": "file_search"}]  # Updated to use a supported tool type
+    )
+    return assistant.id
 
-# Create an Assistant
-def create_assistant(name, description, model, tools, file_ids):
-    try:
-        assistant = openai.Assistant.create(
-            name=name,
-            description=description,
-            model=model,
-            tools=tools,
-            file_ids=file_ids
-        )
-        return assistant
-    except AttributeError as e:
-        print(f"Error creating assistant: {e}")
-        return None
+# Function to initialize OpenAI client with user API key
+def initialize_openai(api_key):
+    openai.api_key = api_key
+    return OpenAI()
 
-# Create an Assistant with given parameters
-assistant = create_assistant(
-    name="Personal Tutor",
-    description="You are a personal tutor. Answer questions and provide information.",
-    model="gpt-4-1106-preview",
-    tools=[{"type": "retrieval"}],
-    file_ids=[]  # Add file IDs if you have any
-)
+# Function to search Wikipedia using the assistant
+def search_wikipedia(assistant_id, query):
+    thread = client.beta.threads.create()
+    client.beta.threads.messages.create(
+        thread_id=thread.id,
+        role="user",
+        content=query
+    )
+    run = client.beta.threads.runs.create(
+        thread_id=thread.id,
+        assistant_id=assistant_id
+    )
+    return get_run(run.id, thread.id)
 
-if assistant:
-    assistant_id = assistant.get('id')  # Retrieve the Assistant ID
+# Function to get the result of a run
+def get_run(run_id, thread_id):
+    return client.beta.threads.runs.retrieve(
+        run_id=run_id,
+        thread_id=thread_id,
+    )
 
-    # Example usage for further operations
-    def create_thread(assistant_id, message_content):
-        try:
-            thread = openai.Thread.create(
-                assistant_id=assistant_id,
-                messages=[
-                    {"role": "user", "content": message_content}
-                ]
-            )
-            return thread
-        except AttributeError as e:
-            print(f"Error creating thread: {e}")
-            return None
+# Streamlit UI
+st.title("Wikipedia Search Assistant")
 
-    def run_thread(thread_id, assistant_id):
-        try:
-            run = openai.Run.create(
-                thread_id=thread_id,
-                assistant_id=assistant_id
-            )
-            return run
-        except AttributeError as e:
-            print(f"Error running thread: {e}")
-            return None
+# User input for OpenAI API key
+api_key = st.sidebar.text_input("Enter your OpenAI API Key:", type="password")
 
-    def get_run_status(run_id, thread_id):
-        try:
-            run = openai.Run.retrieve(
-                run_id=run_id,
-                thread_id=thread_id
-            )
-            return run
-        except AttributeError as e:
-            print(f"Error retrieving run status: {e}")
-            return None
+if api_key:
+    client = initialize_openai(api_key)
+    assistant_id = create_assistant()
 
-    def get_messages(thread_id):
-        try:
-            messages = openai.ThreadMessages.list(thread_id=thread_id)
-            messages = list(messages)
-            messages.reverse()
-            for message in messages:
-                print(f"{message.role}: {message.content.get('text', '')}")
-        except AttributeError as e:
-            print(f"Error retrieving messages: {e}")
+    query = st.text_input("Enter your Wikipedia search query:")
+    
+    if st.button("Search"):
+        if query:
+            with st.spinner("Searching..."):
+                run_result = search_wikipedia(assistant_id, query)
+                messages = client.beta.threads.messages.list(thread_id=run_result.thread_id)
+                st.write("Conversation History:")
+                for message in messages:
+                    st.write(f"{message.role}: {message.content[0].text.value}")
+        else:
+            st.error("Please enter a search query.")
 
-    # Use the assistant
-    if assistant:
-        thread = create_thread(assistant_id, "Search for information about quantum physics on Wikipedia")
-        if thread:
-            run = run_thread(thread.id, assistant_id)
-            if run:
-                run_status = get_run_status(run.id, thread.id)
-                if run_status:
-                    print(f"Run Status: {run_status.get('status', 'unknown')}")
-                    get_messages(thread.id)
+else:
+    st.warning("Please enter your OpenAI API key in the sidebar.")
