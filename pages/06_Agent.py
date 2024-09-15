@@ -1,4 +1,3 @@
-# 에러 안나는 버전 확인
 import streamlit as st
 import openai
 from openai import OpenAI
@@ -57,10 +56,20 @@ def get_messages(thread_id):
 # Streamlit UI
 st.title("Wikipedia Search Assistant")
 
-# User input for OpenAI API key
+# 사용자로부터 OpenAI API 키 입력 받기
+if "api_key_check" not in st.session_state:
+    st.session_state["api_key_check"] = False
+
 api_key = st.sidebar.text_input("Enter your OpenAI API Key:", type="password")
 
+# API 키가 입력되지 않았을 때 렌더링 중단
+if not api_key and not st.session_state["api_key_check"]:
+    st.warning("Please enter your OpenAI API key in the sidebar.")
+    st.stop()
+
+# API 키가 입력된 경우
 if api_key:
+    st.session_state["api_key_check"] = True
     client = initialize_openai(api_key)
     assistant_id = create_assistant()
 
@@ -75,5 +84,3 @@ if api_key:
                     st.write(f"**{message.role}:** {message.content[0].text.value}")
         else:
             st.error("Please enter a search query.")
-else:
-    st.warning("Please enter your OpenAI API key in the sidebar.")
