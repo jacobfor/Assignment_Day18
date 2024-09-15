@@ -1,6 +1,7 @@
 import streamlit as st
 import openai
 from openai import OpenAI
+import time
 
 # Function to create the assistant
 def create_assistant():
@@ -29,7 +30,14 @@ def search_wikipedia(assistant_id, query):
         thread_id=thread.id,
         assistant_id=assistant_id
     )
-    return get_run(run.id, thread.id)
+    
+    # Polling for the assistant's response
+    run_status = get_run(run.id, thread.id)
+    while run_status.status != 'completed':
+        time.sleep(1)
+        run_status = get_run(run.id, thread.id)
+    
+    return get_messages(thread.id)
 
 # Function to get the result of a run
 def get_run(run_id, thread_id):
@@ -37,6 +45,13 @@ def get_run(run_id, thread_id):
         run_id=run_id,
         thread_id=thread_id,
     )
+
+# Function to get all messages in a thread
+def get_messages(thread_id):
+    messages = client.beta.threads.messages.list(thread_id=thread_id)
+    messages = list(messages)
+    messages.reverse()  # Ensures most recent messages are displayed last
+    return messages
 
 # Streamlit UI
 st.title("Wikipedia Search Assistant")
@@ -53,13 +68,11 @@ if api_key:
     if st.button("Search"):
         if query:
             with st.spinner("Searching..."):
-                run_result = search_wikipedia(assistant_id, query)
-                messages = client.beta.threads.messages.list(thread_id=run_result.thread_id)
-                st.write("Conversation History:")
+                messages = search_wikipedia(assistant_id, query)
+                st.write("### Conversation History:")
                 for message in messages:
-                    st.write(f"{message.role}: {message.content[0].text.value}")
+                    st.write(f"**{message.role}:** {message.content[0].text.value}")
         else:
             st.error("Please enter a search query.")
-
 else:
     st.warning("Please enter your OpenAI API key in the sidebar.")
