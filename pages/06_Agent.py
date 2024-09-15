@@ -1,11 +1,13 @@
 import streamlit as st
 import openai
-from openai import OpenAI
 import time
+
+# API key 관련 오류 메시지 상수
+API_KEY_ERROR = "Please enter your OpenAI API key in the sidebar."
 
 # Function to create the assistant
 def create_assistant():
-    assistant = client.beta.assistants.create(
+    assistant = openai.Assistant.create(
         name="Wikipedia Search Assistant",
         description="You are an assistant that searches Wikipedia and provides relevant information.",
         model="gpt-4-1106-preview",
@@ -15,18 +17,17 @@ def create_assistant():
 
 # Function to initialize OpenAI client with user API key
 def initialize_openai(api_key):
-    openai.api_key = api_key
-    return OpenAI()
+    openai.api_key = api_key  # Set the API key using openai module
 
 # Function to search Wikipedia using the assistant
 def search_wikipedia(assistant_id, query):
-    thread = client.beta.threads.create()
-    client.beta.threads.messages.create(
+    thread = openai.Thread.create()
+    openai.Thread.messages.create(
         thread_id=thread.id,
         role="user",
         content=query
     )
-    run = client.beta.threads.runs.create(
+    run = openai.Thread.runs.create(
         thread_id=thread.id,
         assistant_id=assistant_id
     )
@@ -41,14 +42,14 @@ def search_wikipedia(assistant_id, query):
 
 # Function to get the result of a run
 def get_run(run_id, thread_id):
-    return client.beta.threads.runs.retrieve(
+    return openai.Thread.runs.retrieve(
         run_id=run_id,
         thread_id=thread_id,
     )
 
 # Function to get all messages in a thread
 def get_messages(thread_id):
-    messages = client.beta.threads.messages.list(thread_id=thread_id)
+    messages = openai.Thread.messages.list(thread_id=thread_id)
     messages = list(messages)
     messages.reverse()  # Ensures most recent messages are displayed last
     return messages
@@ -56,21 +57,23 @@ def get_messages(thread_id):
 # Streamlit UI
 st.title("Wikipedia Search Assistant")
 
-# 사용자로부터 OpenAI API 키 입력 받기
+# OpenAI API 키 입력 상태 확인
 if "api_key_check" not in st.session_state:
     st.session_state["api_key_check"] = False
 
+# API 키 입력 받기
 api_key = st.sidebar.text_input("Enter your OpenAI API Key:", type="password")
 
-# API 키가 입력되지 않았을 때 렌더링 중단
+# API 키가 없는 경우 렌더링 중단
 if not api_key and not st.session_state["api_key_check"]:
-    st.warning("Please enter your OpenAI API key in the sidebar.")
+    st.warning(API_KEY_ERROR)
     st.stop()
 
 # API 키가 입력된 경우
 if api_key:
     st.session_state["api_key_check"] = True
-    client = initialize_openai(api_key)
+    st.session_state["api_key"] = api_key
+    initialize_openai(api_key)  # API 키를 사용하여 OpenAI 초기화
     assistant_id = create_assistant()
 
     query = st.text_input("Enter your Wikipedia search query:")
