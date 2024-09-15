@@ -14,23 +14,20 @@ if not api_key:
 # OpenAI API 키 설정
 openai.api_key = api_key
 
-# Assistant ID 설정 (OpenAI 플랫폼에서 얻은 Assistant ID 입력)
-assistant_id = "asst_MI7opfY5pXGMsTWj1o8mcHVP"  # OpenAI 플랫폼에서 얻은 Assistant ID
-
 # Streamlit으로 대화형 인터페이스 구현
 st.title("OpenAI Assistant Interface")
 
 # 사용자로부터 프롬프트 입력 받기
 user_input = st.text_input("Enter your question:")
-    
+
 # 대화 기록 저장을 위한 리스트
 chat_history = []
 
 # 사용자의 질문에 대한 응답 생성
 if user_input:
-    # Assistant와 상호작용
-    response = openai.Assistant.create(
-        assistant_id=assistant_id,
+    # ChatCompletion API와 상호작용
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",  # GPT-4로 변경할 수 있습니다.
         messages=[
             {"role": "system", "content": "You are an assistant that helps with various research tasks like Wikipedia search, DuckDuckGo search, and web scraping."},
             {"role": "user", "content": user_input}
