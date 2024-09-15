@@ -27,7 +27,7 @@ chat_history = []
 if user_input:
     # ChatCompletion API와 상호작용
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",  # GPT-4로 변경할 수 있습니다.
+        model="gpt-3.5-turbo",  
         messages=[
             {"role": "system", "content": "You are an assistant that helps with various research tasks like Wikipedia search, DuckDuckGo search, and web scraping."},
             {"role": "user", "content": user_input}
