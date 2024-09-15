@@ -1,3 +1,4 @@
+# 에러 안나는 버전 확인
 import streamlit as st
 import openai
 from openai import OpenAI
